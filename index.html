@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <div class="calculator">
+    <input type="text" class="display" id="display" disabled>
+
+    <div class="buttons">
+        <button class="special" onclick="clearDisplay()">C</button>
+        <button class="special" onclick="backspace()">⌫</button>
+        <button class="special" onclick="memClear()">MC</button>
+        <button class="special" onclick="memRecall()">MR</button>
+        <button class="special" onclick="memPlus()">M+</button>
+        <button class="special" onclick="memMinus()">M-</button>
+
+        <button class="operator" onclick="toggleDegree()">Deg</button>
+        <button class="operator" onclick="appendSymbol('(')">(</button>
+        <button class="operator" onclick="appendSymbol(')')">)</button>
+        <button class="operator" onclick="appendSymbol('^')">^</button>
+        <button class="operator" onclick="appendSymbol('%')">%</button>
+        <button class="operator" onclick="appendSymbol('√')">√</button>
+
+        <button class="number" onclick="appendSymbol('7')">7</button>
+        <button class="number" onclick="appendSymbol('8')">8</button>
+        <button class="number" onclick="appendSymbol('9')">9</button>
+        <button class="operator" onclick="appendSymbol('/')">/</button>
+        <button class="operator" onclick="appendSymbol('pi')">π</button>
+        <button class="operator" onclick="appendSymbol('e')">e</button>
+
+        <button class="number" onclick="appendSymbol('4')">4</button>
+        <button class="number" onclick="appendSymbol('5')">5</button>
+        <button class="number" onclick="appendSymbol('6')">6</button>
+        <button class="operator" onclick="appendSymbol('*')">*</button>
+        <button class="operator" onclick="appendSymbol('sin(')">sin</button>
+        <button class="operator" onclick="appendSymbol('cos(')">cos</button>
+
+        <button class="number" onclick="appendSymbol('1')">1</button>
+        <button class="number" onclick="appendSymbol('2')">2</button>
+        <button class="number" onclick="appendSymbol('3')">3</button>
+        <button class="operator" onclick="appendSymbol('-')">-</button>
+        <button class="operator" onclick="appendSymbol('tan(')">tan</button>
+        <button class="operator" onclick="appendSymbol('log(')">log</button>
+
+        <button class="number" onclick="appendSymbol('0')">0</button>
+        <button class="number" onclick="appendSymbol('.')">.</button>
+        <button class="special" onclick="calculate()">=</button>
+        <button class="operator" onclick="appendSymbol('+')">+</button>
+        <button class="operator" onclick="appendSymbol('ln(')">ln</button>
+        <button class="operator" onclick="appendSymbol('abs(')">abs</button>
+
+        <button class="history-btn" onclick="openHistory()">History</button>
+    </div>
+</div>
+
+<!-- Modal for History -->
+<div class="modal" id="historyModal">
+    <div class="modal-content">
+        <h2>Calculation History</h2>
+        <div id="modalHistory"></div>
+        <button class="clear-history" onclick="clearHistory()">Clear History</button>
+        <button class="close-btn" onclick="closeHistory()">Close</button>
+    </div>
+</div>
+
+<script>
+let display = document.getElementById('display');
+let memory = 0;
+let isDegree = true;
+let historyArr = [];
+
+// Append button symbol to display
+function appendSymbol(symbol) {
+    display.value += symbol;
+}
+
+// Clear display
+function clearDisplay() {
+    display.value = '';
+}
+
+// Backspace
+function backspace() {
+    display.value = display.value.slice(0, -1);
+}
+
+// ✅ Memory functions
+function memClear() {
+    memory = 0;
+}
+function memRecall() {
+    display.value += memory;
+}
+function memPlus() {
+    try {
+        let value = calculateForMemory(display.value);
+        memory += value;
+    } catch {
+        alert("Invalid value for memory");
+    }
+}
+function memMinus() {
+    try {
+        let value = calculateForMemory(display.value);
+        memory -= value;
+    } catch {
+        alert("Invalid value for memory");
+    }
+}
+
+// Toggle Degrees/Radians
+function toggleDegree() {
+    isDegree = !isDegree;
+    alert("Mode: " + (isDegree ? "Degrees" : "Radians"));
+}
+
+// History modal
+function openHistory() {
+    renderModalHistory();
+    document.getElementById('historyModal').style.display = 'flex';
+}
+function closeHistory() {
+    document.getElementById('historyModal').style.display = 'none';
+}
+function addHistory(exp, result) {
+    historyArr.unshift(exp + " = " + result);
+}
+function renderModalHistory() {
+    let container = document.getElementById('modalHistory');
+    container.innerHTML = '';
+    historyArr.forEach(item => {
+        let div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = item;
+        div.onclick = () => {
+            display.value = item.split('=')[0].trim();
+            closeHistory();
+        };
+        container.appendChild(div);
+    });
+}
+function clearHistory() {
+    historyArr = [];
+    renderModalHistory();
+}
+
+// ✅ Calculator evaluate function
+function calculate() {
+    try {
+        let exp = display.value;
+
+        // Replace symbols with JS functions
+        exp = exp.replace(/√(\d+(\.\d+)?)/g, 'Math.sqrt($1)')
+                 .replace(/√/g, 'Math.sqrt')
+                 .replace(/pi/g, 'Math.PI')
+                 .replace(/e/g, 'Math.E')
+                 .replace(/sin\(/g, isDegree ? 'Math.sin(Math.PI/180*' : 'Math.sin(')
+                 .replace(/cos\(/g, isDegree ? 'Math.cos(Math.PI/180*' : 'Math.cos(')
+                 .replace(/tan\(/g, isDegree ? 'Math.tan(Math.PI/180*' : 'Math.tan(')
+                 .replace(/log\(/g, 'Math.log10(')
+                 .replace(/ln\(/g, 'Math.log(')
+                 .replace(/abs\(/g, 'Math.abs(')
+                 .replace(/\^/g, '**')
+                 .replace(/%/g, '/100');
+
+        let result = eval(exp);
+        addHistory(display.value, result);
+        display.value = result;
+    } catch {
+        display.value = 'Error';
+    }
+}
+
+// Helper function: safely calculate numeric value for memory
+function calculateForMemory(exp) {
+    exp = exp.replace(/√(\d+(\.\d+)?)/g, 'Math.sqrt($1)')
+             .replace(/√/g, 'Math.sqrt')
+             .replace(/pi/g, 'Math.PI')
+             .replace(/e/g, 'Math.E')
+             .replace(/sin\(/g, isDegree ? 'Math.sin(Math.PI/180*' : 'Math.sin(')
+             .replace(/cos\(/g, isDegree ? 'Math.cos(Math.PI/180*' : 'Math.cos(')
+             .replace(/tan\(/g, isDegree ? 'Math.tan(Math.PI/180*' : 'Math.tan(')
+             .replace(/log\(/g, 'Math.log10(')
+             .replace(/ln\(/g, 'Math.log(')
+             .replace(/abs\(/g, 'Math.abs(')
+             .replace(/\^/g, '**')
+             .replace(/%/g, '/100');
+    return eval(exp) || 0;
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(e) {
+    const allowed = "0123456789+-*/().%^";
+    if (allowed.includes(e.key)) display.value += e.key;
+    else if (e.key === "Enter") calculate();
+    else if (e.key === "Backspace") backspace();
+    else if (e.key === "Escape") clearDisplay();
+});
+</script>
+
+</body>
+</html>
